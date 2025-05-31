@@ -1,45 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ExternalLink, Smartphone, Monitor, QrCode, Copy, Eye } from 'lucide-react';
+import { Plus, ExternalLink, Smartphone, Monitor, QrCode, Copy, Eye, Zap, ArrowRight, CheckCircle } from 'lucide-react';
 
 const App = () => {
-  // Add global styles to ensure proper centering
-  React.useEffect(() => {
-    // Ensure html and body take full width and height
-    document.documentElement.style.width = '100%';
-    document.documentElement.style.height = '100%';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    
-    // Ensure root div takes full width
-    const root = document.getElementById('root');
-    if (root) {
-      root.style.width = '100%';
-      root.style.height = '100%';
-      root.style.display = 'flex';
-      root.style.justifyContent = 'center';
-    }
-    
-    return () => {
-      // Cleanup function to reset styles if needed
-      document.documentElement.style.width = '';
-      document.documentElement.style.height = '';
-      document.body.style.width = '';
-      document.body.style.height = '';
-      document.body.style.margin = '';
-      document.body.style.padding = '';
-      if (root) {
-        root.style.width = '';
-        root.style.height = '';
-        root.style.display = '';
-        root.style.justifyContent = '';
-      }
-    };
-  }, []);
   const [links, setLinks] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [copySuccess, setCopySuccess] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -48,27 +14,21 @@ const App = () => {
     webLink: ''
   });
 
-  // Mock API functions (replace with real API calls later)
+  // Mock API functions
   const mockAPI = {
     createLink: async (data) => {
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const newLink = {
         _id: Date.now().toString(),
         shortId: Math.random().toString(36).substring(2, 8),
         ...data,
-        qrCodeUrl: `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="white"/><text x="50" y="50" text-anchor="middle" dy=".3em" fill="black" font-size="12">QR Code</text></svg>`)}`,
-        clicks: 0,
+        qrCodeUrl: `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="white" rx="8"/><rect x="10" y="10" width="15" height="15" fill="black"/><rect x="75" y="10" width="15" height="15" fill="black"/><rect x="10" y="75" width="15" height="15" fill="black"/><rect x="35" y="35" width="30" height="30" fill="black" rx="4"/></svg>`)}`,
+        clicks: Math.floor(Math.random() * 1000),
         createdAt: new Date().toISOString()
       };
       
       return { data: newLink };
-    },
-    
-    getAllLinks: async () => {
-      // Return mock data or existing links
-      return { data: links };
     }
   };
 
@@ -102,9 +62,14 @@ const App = () => {
     });
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    alert('Link copied to clipboard!');
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess('Copied!');
+      setTimeout(() => setCopySuccess(''), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
   };
 
   const getSmartLinkUrl = (shortId) => {
@@ -112,229 +77,95 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ width: '100vw', maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-        <div className="max-w-6xl w-full px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900">Smart Links</h1>
-              <p className="text-gray-600">Create intelligent links that redirect based on device type</p>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <div className="text-center max-w-4xl mx-auto">
+          {/* Logo and Title */}
+          <div className="mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-white bg-opacity-20 rounded-3xl backdrop-blur-sm mb-6">
+              <Zap className="text-white w-10 h-10" />
             </div>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 flex-shrink-0"
-            >
-              <Plus size={20} />
-              Create Link
-            </button>
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+              Smart Links
+            </h1>
+            <p className="text-xl text-white text-opacity-90 max-w-2xl mx-auto leading-relaxed">
+              Create intelligent links that redirect users to the perfect destination based on their device type
+            </p>
           </div>
-        </div>
-      </header>
 
-      <main className="flex-1" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-        <div className="max-w-6xl w-full px-4 py-8">
-        {/* Create Link Modal */}
-        {showCreateForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto mx-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold">Create Smart Link</h2>
-                  <button
-                    onClick={() => setShowCreateForm(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Title *
-                    </label>
-                    <input
-                      type="text"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleChange}
-                      required
-                      placeholder="My Awesome App"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      placeholder="Brief description of your app"
-                      rows="3"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      iOS App Store Link *
-                    </label>
-                    <input
-                      type="url"
-                      name="iosLink"
-                      value={formData.iosLink}
-                      onChange={handleChange}
-                      required
-                      placeholder="https://apps.apple.com/app/..."
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Android Play Store Link *
-                    </label>
-                    <input
-                      type="url"
-                      name="androidLink"
-                      value={formData.androidLink}
-                      onChange={handleChange}
-                      required
-                      placeholder="https://play.google.com/store/apps/details?id=..."
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Web App Link *
-                    </label>
-                    <input
-                      type="url"
-                      name="webLink"
-                      value={formData.webLink}
-                      onChange={handleChange}
-                      required
-                      placeholder="https://your-web-app.com"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowCreateForm(false)}
-                      className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={loading}
-                      className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                    >
-                      {loading ? 'Creating...' : 'Create Link'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+          {/* Main Action Button */}
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="inline-flex items-center gap-3 bg-white text-gray-900 px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group mb-16"
+          >
+            <Plus size={24} />
+            Create Smart Link
+            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+          </button>
 
-          {/* Links List */}
+          {/* Links Display */}
           {links.length === 0 ? (
-            <div className="text-center py-12 w-full">
-              <div className="flex flex-col items-center justify-center">
-                <QrCode size={48} className="mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No smart links yet</h3>
-                <p className="text-gray-600 mb-6">Create your first smart link to get started</p>
-                <button
-                  onClick={() => setShowCreateForm(true)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Create Your First Link
-                </button>
-              </div>
+            <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-3xl p-12 border border-white border-opacity-20 max-w-md mx-auto">
+              <QrCode size={48} className="text-white mx-auto mb-4" />
+              <h3 className="text-2xl font-semibold text-white mb-2">No smart links yet</h3>
+              <p className="text-white text-opacity-80">Create your first smart link to get started</p>
             </div>
           ) : (
-            <div className="grid gap-6 w-full">
-              {links.map((link) => (
-                <div key={link._id} className="bg-white rounded-lg shadow-sm border p-6 w-full">
-                  <div className="flex items-start justify-between mb-4 flex-wrap gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {link.title}
-                      </h3>
+            <div className="grid gap-6 max-w-4xl mx-auto w-full">
+              {links.map((link, index) => (
+                <div key={link._id} className="bg-white rounded-2xl shadow-xl p-6 text-left">
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{link.title}</h3>
                       {link.description && (
-                        <p className="text-gray-600 mb-3">{link.description}</p>
+                        <p className="text-gray-600 mb-4">{link.description}</p>
                       )}
                       
                       {/* Smart Link URL */}
-                      <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-3 mb-4">
-                        <ExternalLink size={16} className="text-gray-400 flex-shrink-0" />
+                      <div className="bg-gray-50 rounded-xl p-3 mb-4 flex items-center gap-3">
+                        <ExternalLink size={16} className="text-gray-400" />
                         <code className="flex-1 text-sm text-gray-700 break-all">
                           {getSmartLinkUrl(link.shortId)}
                         </code>
                         <button
                           onClick={() => copyToClipboard(getSmartLinkUrl(link.shortId))}
-                          className="p-1 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                          title="Copy link"
+                          className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
                         >
-                          <Copy size={16} />
+                          {copySuccess ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} />}
                         </button>
                       </div>
 
                       {/* Device Links */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                         <div className="flex items-center gap-2 text-sm">
-                          <Smartphone size={16} className="text-blue-500 flex-shrink-0" />
+                          <Smartphone size={16} className="text-blue-500" />
                           <span className="text-gray-600">iOS:</span>
-                          <a 
-                            href={link.iosLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline truncate"
-                          >
+                          <a href={link.iosLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
                             App Store
                           </a>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
-                          <Smartphone size={16} className="text-green-500 flex-shrink-0" />
+                          <Smartphone size={16} className="text-green-500" />
                           <span className="text-gray-600">Android:</span>
-                          <a 
-                            href={link.androidLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline truncate"
-                          >
+                          <a href={link.androidLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
                             Play Store
                           </a>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
-                          <Monitor size={16} className="text-purple-500 flex-shrink-0" />
+                          <Monitor size={16} className="text-purple-500" />
                           <span className="text-gray-600">Web:</span>
-                          <a 
-                            href={link.webLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline truncate"
-                          >
+                          <a href={link.webLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
                             Web App
                           </a>
                         </div>
                       </div>
 
                       {/* Stats */}
-                      <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <Eye size={16} />
-                          <span>{link.clicks} clicks</span>
+                          <span>{link.clicks.toLocaleString()} clicks</span>
                         </div>
                         <div>
                           Created {new Date(link.createdAt).toLocaleDateString()}
@@ -343,13 +174,9 @@ const App = () => {
                     </div>
 
                     {/* QR Code */}
-                    <div className="text-center flex-shrink-0">
-                      <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mb-2">
-                        <img 
-                          src={link.qrCodeUrl} 
-                          alt="QR Code" 
-                          className="w-20 h-20"
-                        />
+                    <div className="text-center">
+                      <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center mb-2">
+                        <img src={link.qrCodeUrl} alt="QR Code" className="w-20 h-20" />
                       </div>
                       <p className="text-xs text-gray-500">QR Code</p>
                     </div>
@@ -359,7 +186,110 @@ const App = () => {
             </div>
           )}
         </div>
-      </main>
+      </div>
+
+      {/* Create Link Modal */}
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Create Smart Link</h2>
+                <button
+                  onClick={() => setShowCreateForm(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    required
+                    placeholder="My Awesome App"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Brief description of your app"
+                    rows="3"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">iOS App Store Link *</label>
+                  <input
+                    type="url"
+                    name="iosLink"
+                    value={formData.iosLink}
+                    onChange={handleChange}
+                    required
+                    placeholder="https://apps.apple.com/app/..."
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Android Play Store Link *</label>
+                  <input
+                    type="url"
+                    name="androidLink"
+                    value={formData.androidLink}
+                    onChange={handleChange}
+                    required
+                    placeholder="https://play.google.com/store/apps/details?id=..."
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Web App Link *</label>
+                  <input
+                    type="url"
+                    name="webLink"
+                    value={formData.webLink}
+                    onChange={handleChange}
+                    required
+                    placeholder="https://your-web-app.com"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(false)}
+                    className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {loading ? 'Creating...' : 'Create Link'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
