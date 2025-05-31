@@ -77,18 +77,31 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{minHeight: '100vh', backgroundColor: '#f9fafb'}}>
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <header className="bg-white shadow-sm border-b" style={{backgroundColor: '#ffffff', borderBottom: '1px solid #e5e7eb', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)'}}>
+        <div className="max-w-6xl mx-auto px-4 py-4" style={{maxWidth: '72rem', margin: '0 auto', padding: '1rem'}}>
+          <div className="flex items-center justify-between" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Smart Links</h1>
-              <p className="text-gray-600">Create intelligent links that redirect based on device type</p>
+              <h1 className="text-2xl font-bold text-gray-900" style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#111827', margin: '0'}}>Smart Links</h1>
+              <p className="text-gray-600" style={{color: '#4b5563', margin: '0.25rem 0 0 0'}}>Create intelligent links that redirect based on device type</p>
             </div>
             <button
               onClick={() => setShowCreateForm(true)}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              style={{
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}
             >
               <Plus size={20} />
               Create Link
@@ -97,17 +110,44 @@ const App = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8" style={{maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem', backgroundColor: '#f9fafb'}}>
         {/* Create Link Modal */}
         {showCreateForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold">Create Smart Link</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            zIndex: 50
+          }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto" style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '0.5rem',
+              boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+              maxWidth: '28rem',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}>
+              <div className="p-6" style={{padding: '1.5rem'}}>
+                <div className="flex items-center justify-between mb-4" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem'}}>
+                  <h2 className="text-xl font-bold" style={{fontSize: '1.25rem', fontWeight: 'bold', color: '#111827', margin: '0'}}>Create Smart Link</h2>
                   <button
                     onClick={() => setShowCreateForm(false)}
                     className="text-gray-400 hover:text-gray-600"
+                    style={{
+                      color: '#9ca3af',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '1.5rem'
+                    }}
                   >
                     ✕
                   </button>
@@ -213,13 +253,23 @@ const App = () => {
 
         {/* Links List */}
         {links.length === 0 ? (
-          <div className="text-center py-12">
-            <QrCode size={48} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No smart links yet</h3>
-            <p className="text-gray-600 mb-6">Create your first smart link to get started</p>
+          <div className="text-center py-12" style={{textAlign: 'center', padding: '3rem 0'}}>
+            <QrCode size={48} className="mx-auto text-gray-400 mb-4" style={{margin: '0 auto 1rem auto', color: '#9ca3af'}} />
+            <h3 className="text-lg font-medium text-gray-900 mb-2" style={{fontSize: '1.125rem', fontWeight: '500', color: '#111827', marginBottom: '0.5rem'}}>No smart links yet</h3>
+            <p className="text-gray-600 mb-6" style={{color: '#4b5563', marginBottom: '1.5rem'}}>Create your first smart link to get started</p>
             <button
               onClick={() => setShowCreateForm(true)}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              style={{
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500'
+              }}
             >
               Create Your First Link
             </button>
