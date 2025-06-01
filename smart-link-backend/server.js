@@ -12,6 +12,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/links', require('./routes/links'));
+app.use('/api/auth', require('./routes/auth'));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smartlinks')

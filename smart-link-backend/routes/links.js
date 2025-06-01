@@ -3,9 +3,10 @@ const router = express.Router();
 const shortid = require('shortid');
 const SmartLink = require('../models/SmartLink');
 const { generateQRCode } = require('../utils/qrGenerator');
+const auth = require('../middleware/auth');
 
 // Create a new smart link
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
     const { title, description, iosLink, androidLink, webLink } = req.body;
     
@@ -15,14 +16,15 @@ router.post('/', async (req, res) => {
     const qrCodeUrl = await generateQRCode(smartLinkUrl);
     
     const smartLink = new SmartLink({
-      shortId,
-      title,
-      description,
-      iosLink,
-      androidLink,
-      webLink,
-      qrCodeUrl
-    });
+    shortId,
+    title,
+    description,
+    iosLink,
+    androidLink,
+    webLink,
+    qrCodeUrl,
+    user: req.user.id // associate with user
+  });
     
     await smartLink.save();
     res.status(201).json(smartLink);
@@ -31,10 +33,10 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Get all smart links
-router.get('/', async (req, res) => {
+// Get all smart links for the logged-in user
+router.get('/', auth, async (req, res) => {
   try {
-    const links = await SmartLink.find().sort({ createdAt: -1 });
+    const links = await SmartLink.find({ user: req.user.id }).sort({ createdAt: -1 });
     res.json(links);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -79,6 +81,36 @@ router.get('/data/:shortId', async (req, res) => {
     }
     res.json(link);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create a new plain text QR
+router.post('/text', auth, async (req, res) => {
+  try {
+    const { plainText } = req.body;
+    if (!plainText) {
+      return res.status(400).json({ error: 'plainText is required' });
+    }
+
+    const qrCodeUrl = await generateQRCode(plainText);
+
+    const smartLink = new SmartLink({
+      title: 'Text QR',
+      description: '',
+      iosLink: '',
+      androidLink: '',
+      webLink: '',
+      qrCodeUrl,
+      plainText,
+      clicks: 0,
+      user: req.user.id
+    });
+    await smartLink.save();
+
+    res.status(201).json(smartLink);
+  } catch (error) {
+    console.error(error); // <--- Add this line to see the real error in your backend console!
     res.status(500).json({ error: error.message });
   }
 });

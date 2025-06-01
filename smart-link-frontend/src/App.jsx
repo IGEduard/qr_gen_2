@@ -1,40 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ExternalLink, Smartphone, Monitor, QrCode, Copy, Eye, Zap, ArrowRight, CheckCircle, Moon } from 'lucide-react';
-import { linkAPI } from './services/api'; // Add this import
+import { linkAPI, authAPI } from './services/api';
 
 // Simple router hook
 const useRouter = () => {
   const [pathname, setPathname] = useState(window.location.pathname);
-  
   useEffect(() => {
-    const handlePopState = () => {
-      setPathname(window.location.pathname);
-    };
-    
+    const handlePopState = () => setPathname(window.location.pathname);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-  
   const navigate = (path) => {
     window.history.pushState({}, '', path);
     setPathname(path);
   };
-  
   return { pathname, navigate };
 };
 
 // Device detection function
 const detectDevice = () => {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-  
-  if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-    return 'ios';
-  }
-  
-  if (/android/i.test(userAgent)) {
-    return 'android';
-  }
-  
+  if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) return 'ios';
+  if (/android/i.test(userAgent)) return 'android';
   return 'web';
 };
 
@@ -62,7 +49,6 @@ const SmartLinkRedirect = ({ shortId }) => {
 
   useEffect(() => {
     if (!loading && link) {
-      console.log('Redirecting to:', link, 'Device:', device); // Add this line
       setTimeout(() => {
         let redirectUrl;
         switch (device) {
@@ -163,6 +149,18 @@ const SmartLinkRedirect = ({ shortId }) => {
 };
 
 const App = () => {
+  const [user, setUser] = useState(() => {
+  const storedUser = localStorage.getItem('user');
+  return storedUser ? JSON.parse(storedUser) : null;
+});
+const [token, setToken] = useState(() => localStorage.getItem('token') || '');
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [authForm, setAuthForm] = useState({ email: '', password: '' });
+  const [authError, setAuthError] = useState('');
+
+  const [qrMode, setQrMode] = useState('smartlink'); // 'smartlink' or 'text'
+  const [plainText, setPlainText] = useState('');
   const { pathname, navigate } = useRouter();
   const [links, setLinks] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -176,28 +174,24 @@ const App = () => {
     webLink: ''
   });
 
+  // Fetch user links when logged in
+  useEffect(() => {
+  if (token) {
+    linkAPI.getAllLinks()
+      .then(res => {
+        console.log('Fetched links:', res.data);
+        setLinks(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch(() => setLinks([]));
+  } else {
+    setLinks([]);
+  }
+}, [token]);
+
   // Generate QR code using an online service (for demo purposes)
   const generateQRCodeUrl = (text) => {
     const encodedText = encodeURIComponent(text);
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedText}&bgcolor=ffffff&color=000000&format=png`;
-  };
-
-  const mockAPI = {
-    createLink: async (data) => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const shortId = Math.random().toString(36).substring(2, 8);
-      const smartLinkUrl = `${window.location.origin}/link/${shortId}`;
-      
-      const newLink = {
-        _id: Date.now().toString(),
-        shortId,
-        ...data,
-        qrCodeUrl: generateQRCodeUrl(smartLinkUrl),
-        clicks: Math.floor(Math.random() * 1000),
-        createdAt: new Date().toISOString()
-      };
-      return { data: newLink };
-    }
   };
 
   // Check if current path is a smart link
@@ -212,16 +206,22 @@ const App = () => {
     setLoading(true);
 
     try {
-      // Use the real backend API instead of mockAPI
-      const response = await linkAPI.createLink(formData);
-      setLinks([response.data, ...links]);
-      setFormData({
-        title: '',
-        description: '',
-        iosLink: '',
-        androidLink: '',
-        webLink: ''
-      });
+      if (qrMode === 'smartlink') {
+        const response = await linkAPI.createLink(formData);
+        setLinks([response.data, ...links]);
+        setFormData({
+          title: '',
+          description: '',
+          iosLink: '',
+          androidLink: '',
+          webLink: ''
+        });
+      } else {
+        // Save Text QR to backend
+        const response = await linkAPI.createTextQR(plainText);
+        setLinks([response.data, ...links]);
+        setPlainText('');
+      }
       setShowCreateForm(false);
     } catch (error) {
       console.error('Error creating link:', error);
@@ -253,9 +253,108 @@ const App = () => {
     return `${baseUrl}/api/links/${shortId}`;
   };
 
+  const handleLogout = () => {
+    setUser(null);
+    setToken('');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setLinks([]);
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header with device-like styling */}
+      {/* Auth Modals */}
+      {showLogin && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <form
+            className="bg-gray-800 p-8 rounded-xl shadow-xl w-full max-w-xs"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setAuthError('');
+              try {
+                const res = await authAPI.login(authForm);
+                setToken(res.data.token);
+                setUser(res.data.user);
+                localStorage.setItem('token', res.data.token);
+                localStorage.setItem('user', JSON.stringify(res.data.user));
+                setShowLogin(false);
+                setAuthForm({ email: '', password: '' });
+              } catch (err) {
+                setAuthError(err.response?.data?.error || 'Login failed');
+              }
+            }}
+          >
+            <h2 className="text-xl font-bold mb-4">Login</h2>
+            <input
+              type="email"
+              placeholder="Email"
+              value={authForm.email}
+              onChange={e => setAuthForm(f => ({ ...f, email: e.target.value }))}
+              required
+              className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={authForm.password}
+              onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
+              required
+              className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
+            />
+            {authError && <div className="text-red-400 mb-2">{authError}</div>}
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2">Login</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded" onClick={() => setShowLogin(false)}>Cancel</button>
+          </form>
+        </div>
+      )}
+
+      {showRegister && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <form
+            className="bg-gray-800 p-8 rounded-xl shadow-xl w-full max-w-xs"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setAuthError('');
+              try {
+                await authAPI.register(authForm);
+                // Auto-login after register:
+                const res = await authAPI.login(authForm);
+                setToken(res.data.token);
+                setUser(res.data.user);
+                localStorage.setItem('token', res.data.token);
+                localStorage.setItem('user', JSON.stringify(res.data.user));
+                setShowRegister(false);
+                setAuthForm({ email: '', password: '' });
+              } catch (err) {
+                setAuthError(err.response?.data?.error || 'Register failed');
+              }
+            }}
+          >
+            <h2 className="text-xl font-bold mb-4">Register</h2>
+            <input
+              type="email"
+              placeholder="Email"
+              value={authForm.email}
+              onChange={e => setAuthForm(f => ({ ...f, email: e.target.value }))}
+              required
+              className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={authForm.password}
+              onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
+              required
+              className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
+            />
+            {authError && <div className="text-red-400 mb-2">{authError}</div>}
+            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded mb-2">Register</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded" onClick={() => setShowRegister(false)}>Cancel</button>
+          </form>
+        </div>
+      )}
+
+      {/* Header */}
       <div className="bg-black border-b border-gray-800">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -270,6 +369,14 @@ const App = () => {
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Moon size={14} />
             <span>Dark Mode</span>
+            {user ? (
+              <button onClick={handleLogout} className="ml-4 bg-gray-700 px-3 py-1 rounded text-white">Logout</button>
+            ) : (
+              <>
+                <button onClick={() => setShowLogin(true)} className="ml-4 bg-blue-600 px-3 py-1 rounded text-white">Login</button>
+                <button onClick={() => setShowRegister(true)} className="ml-2 bg-purple-600 px-3 py-1 rounded text-white">Register</button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -284,19 +391,21 @@ const App = () => {
             Intelligent Link Management
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
-            Create smart links that automatically redirect users to the perfect app store or web destination based on their device
+            Create smart links that automatically redirect users to the perfect app store or web destination based on their device, or generate a QR code for any text!
           </p>
         </div>
 
         {/* Main Action Button */}
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group mb-12"
-        >
-          <Plus size={24} />
-          Create Smart Link
-          <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-        </button>
+        {user && (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group mb-12"
+          >
+            <Plus size={24} />
+            Create Smart Link / Text QR
+            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        )}
 
         {/* Links Display */}
         {links.length === 0 ? (
@@ -305,7 +414,7 @@ const App = () => {
               <QrCode size={32} className="text-gray-400" />
             </div>
             <h3 className="text-2xl font-semibold mb-2">No smart links yet</h3>
-            <p className="text-gray-400">Create your first smart link to get started</p>
+            <p className="text-gray-400">Create your first smart link or text QR to get started</p>
           </div>
         ) : (
           <div className="grid gap-6 w-full">
@@ -318,45 +427,59 @@ const App = () => {
                       <p className="text-gray-400 mb-4">{link.description}</p>
                     )}
 
-                    {/* Smart Link URL */}
-                    <div className="bg-gray-900 border border-gray-600 rounded-xl p-3 mb-4 flex items-center gap-3">
-                      <ExternalLink size={16} className="text-gray-400" />
-                      <code className="flex-1 text-sm text-blue-400 break-all font-mono">
-                        {getSmartLinkUrl(link.shortId)}
-                      </code>
-                      <button
-                        onClick={() => copyToClipboard(getSmartLinkUrl(link.shortId))}
-                        className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
-                      >
-                        {copySuccess ? <CheckCircle size={16} className="text-green-400" /> : <Copy size={16} />}
-                      </button>
-                    </div>
-
-                    {/* Device Links */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                      {[
-                        { label: 'iOS', icon: <Smartphone size={16} className="text-blue-400" />, url: link.iosLink, store: 'App Store' },
-                        { label: 'Android', icon: <Smartphone size={16} className="text-green-400" />, url: link.androidLink, store: 'Play Store' },
-                        { label: 'Web', icon: <Monitor size={16} className="text-purple-400" />, url: link.webLink, store: 'Web App' }
-                      ].map((device, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm bg-gray-900 rounded-lg p-2">
-                          {device.icon}
-                          <span className="text-gray-300">{device.label}:</span>
-                          <a href={device.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline truncate">
-                            {device.store}
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <Eye size={16} />
-                        <span>{link.clicks.toLocaleString()} clicks</span>
+                    {/* Smart Link URL (only for smart links) */}
+                    {link.shortId && (
+                      <div className="bg-gray-900 border border-gray-600 rounded-xl p-3 mb-4 flex items-center gap-3">
+                        <ExternalLink size={16} className="text-gray-400" />
+                        <code className="flex-1 text-sm text-blue-400 break-all font-mono">
+                          {getSmartLinkUrl(link.shortId)}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(getSmartLinkUrl(link.shortId))}
+                          className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
+                        >
+                          {copySuccess ? <CheckCircle size={16} className="text-green-400" /> : <Copy size={16} />}
+                        </button>
                       </div>
-                      <div>Created {new Date(link.createdAt).toLocaleDateString()}</div>
-                    </div>
+                    )}
+
+                    {/* Device Links (only for smart links) */}
+                    {link.shortId && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        {[
+                          { label: 'iOS', icon: <Smartphone size={16} className="text-blue-400" />, url: link.iosLink, store: 'App Store' },
+                          { label: 'Android', icon: <Smartphone size={16} className="text-green-400" />, url: link.androidLink, store: 'Play Store' },
+                          { label: 'Web', icon: <Monitor size={16} className="text-purple-400" />, url: link.webLink, store: 'Web App' }
+                        ].map((device, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-sm bg-gray-900 rounded-lg p-2">
+                            {device.icon}
+                            <span className="text-gray-300">{device.label}:</span>
+                            <a href={device.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline truncate">
+                              {device.store}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Plain Text (only for text QR) */}
+                    {!link.shortId && link.plainText && (
+                      <div className="mb-4">
+                        <span className="text-gray-400">Text:</span>
+                        <span className="ml-2 font-mono text-blue-300">{link.plainText}</span>
+                      </div>
+                    )}
+
+                    {/* Stats (only for smart links) */}
+                    {link.shortId && (
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Eye size={16} />
+                          <span>{link.clicks.toLocaleString()} clicks</span>
+                        </div>
+                        <div>Created {new Date(link.createdAt).toLocaleDateString()}</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* QR Code */}
@@ -379,7 +502,7 @@ const App = () => {
           <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Create Smart Link</h2>
+                <h2 className="text-2xl font-bold">Create Smart Link / Text QR</h2>
                 <button
                   onClick={() => setShowCreateForm(false)}
                   className="text-gray-400 hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700"
@@ -388,57 +511,96 @@ const App = () => {
                 </button>
               </div>
 
-              <div className="space-y-4">
-                {[
-                  { field: 'title', label: 'Title', type: 'text', placeholder: 'My Awesome App' },
-                  { field: 'description', label: 'Description', type: 'textarea', placeholder: 'Brief description of your app' },
-                  { field: 'iosLink', label: 'iOS Link', type: 'url', placeholder: 'https://apps.apple.com/app/...' },
-                  { field: 'androidLink', label: 'Android Link', type: 'url', placeholder: 'https://play.google.com/store/apps/details?id=...' },
-                  { field: 'webLink', label: 'Web Link', type: 'url', placeholder: 'https://your-web-app.com' }
-                ].map(({ field, label, type, placeholder }) => (
-                  <div key={field}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
-                    {type === 'textarea' ? (
-                      <textarea
-                        name={field}
-                        value={formData[field]}
-                        onChange={handleChange}
-                        placeholder={placeholder}
-                        rows="3"
-                        className="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      />
-                    ) : (
-                      <input
-                        type={type}
-                        name={field}
-                        value={formData[field]}
-                        onChange={handleChange}
-                        required={field !== 'description'}
-                        placeholder={placeholder}
-                        className="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      />
-                    )}
-                  </div>
-                ))}
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateForm(false)}
-                    className="flex-1 py-3 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg disabled:opacity-50 transition-colors"
-                  >
-                    {loading ? 'Creating...' : 'Create Link'}
-                  </button>
-                </div>
+              {/* Mode Selector */}
+              <div className="mb-4 flex gap-4">
+                <label>
+                  <input
+                    type="radio"
+                    name="qrMode"
+                    value="smartlink"
+                    checked={qrMode === 'smartlink'}
+                    onChange={() => setQrMode('smartlink')}
+                  />{' '}
+                  Smart Link
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="qrMode"
+                    value="text"
+                    checked={qrMode === 'text'}
+                    onChange={() => setQrMode('text')}
+                  />{' '}
+                  Text QR
+                </label>
               </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  {qrMode === 'smartlink' ? (
+                    [
+                      { field: 'title', label: 'Title', type: 'text', placeholder: 'My Awesome App' },
+                      { field: 'description', label: 'Description', type: 'textarea', placeholder: 'Brief description of your app' },
+                      { field: 'iosLink', label: 'iOS Link', type: 'url', placeholder: 'https://apps.apple.com/app/...' },
+                      { field: 'androidLink', label: 'Android Link', type: 'url', placeholder: 'https://play.google.com/store/apps/details?id=...' },
+                      { field: 'webLink', label: 'Web Link', type: 'url', placeholder: 'https://your-web-app.com' }
+                    ].map(({ field, label, type, placeholder }) => (
+                      <div key={field}>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
+                        {type === 'textarea' ? (
+                          <textarea
+                            name={field}
+                            value={formData[field]}
+                            onChange={handleChange}
+                            placeholder={placeholder}
+                            rows="3"
+                            className="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          />
+                        ) : (
+                          <input
+                            type={type}
+                            name={field}
+                            value={formData[field]}
+                            onChange={handleChange}
+                            required={field !== 'description'}
+                            placeholder={placeholder}
+                            className="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          />
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Text for QR Code</label>
+                      <input
+                        type="text"
+                        value={plainText}
+                        onChange={e => setPlainText(e.target.value)}
+                        placeholder="Enter serial code or any text"
+                        className="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateForm(false)}
+                      className="flex-1 py-3 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                    >
+                      {loading ? 'Creating...' : (qrMode === 'smartlink' ? 'Create Link' : 'Create Text QR')}
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         </div>

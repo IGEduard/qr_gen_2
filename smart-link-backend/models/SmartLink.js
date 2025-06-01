@@ -3,27 +3,22 @@ const mongoose = require('mongoose');
 const SmartLinkSchema = new mongoose.Schema({
   shortId: {
     type: String,
-    required: true,
-    unique: true
+    unique: true,
+    sparse: true // allow multiple docs with no shortId
   },
   title: {
     type: String,
     required: true
   },
   description: String,
-  iosLink: {
+  iosLink: String,
+  androidLink: String,
+  webLink: String,
+  plainText: String, // <-- add this line
+  qrCodeUrl: {
     type: String,
     required: true
   },
-  androidLink: {
-    type: String,
-    required: true
-  },
-  webLink: {
-    type: String,
-    required: true
-  },
-  qrCodeUrl: String,
   clicks: {
     type: Number,
     default: 0
@@ -31,7 +26,11 @@ const SmartLinkSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
 });
 
 module.exports = mongoose.model('SmartLink', SmartLinkSchema);
