@@ -156,6 +156,9 @@ const App = () => {
 const [token, setToken] = useState(() => localStorage.getItem('token') || '');
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
   const [authError, setAuthError] = useState('');
 
@@ -304,6 +307,13 @@ const [token, setToken] = useState(() => localStorage.getItem('token') || '');
             {authError && <div className="text-red-400 mb-2">{authError}</div>}
             <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2">Login</button>
             <button type="button" className="w-full bg-gray-700 text-white py-2 rounded" onClick={() => setShowLogin(false)}>Cancel</button>
+            <button
+              type="button"
+              className="text-blue-400 underline mb-2"
+              onClick={() => setShowForgot(true)}
+            >
+              Forgot Password?
+            </button>
           </form>
         </div>
       )}
@@ -350,6 +360,37 @@ const [token, setToken] = useState(() => localStorage.getItem('token') || '');
             {authError && <div className="text-red-400 mb-2">{authError}</div>}
             <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded mb-2">Register</button>
             <button type="button" className="w-full bg-gray-700 text-white py-2 rounded" onClick={() => setShowRegister(false)}>Cancel</button>
+          </form>
+        </div>
+      )}
+
+      {showForgot && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <form
+            className="bg-gray-800 p-8 rounded-xl shadow-xl w-full max-w-xs"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setForgotMessage('');
+              try {
+                await authAPI.forgotPassword({ email: forgotEmail });
+                setForgotMessage('Check your email for reset instructions.');
+              } catch (err) {
+                setForgotMessage(err.response?.data?.error || 'Error sending reset email');
+              }
+            }}
+          >
+            <h2 className="text-xl font-bold mb-4">Forgot Password</h2>
+            <input
+              type="email"
+              placeholder="Email"
+              value={forgotEmail}
+              onChange={e => setForgotEmail(e.target.value)}
+              required
+              className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
+            />
+            {forgotMessage && <div className="text-green-400 mb-2">{forgotMessage}</div>}
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2">Send Reset Link</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded" onClick={() => setShowForgot(false)}>Cancel</button>
           </form>
         </div>
       )}
