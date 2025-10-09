@@ -54,22 +54,18 @@ router.post('/forgot-password', async (req, res) => {
   user.resetTokenExpires = Date.now() + 3600 * 1000; // 1 hour
   await user.save();
 
-  // Send email (configure SMTP for production)
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.SMTP_USER, // add to .env
-      pass: process.env.SMTP_PASS  // add to .env
-    }
-  });
-
-  await transporter.sendMail({
-    to: email,
-    subject: 'Password Reset',
-    text: `Reset your password: ${process.env.BASE_URL}/reset-password/${token}`
-  });
-
-  res.json({ message: 'Password reset email sent' });
+  // Send email using Resend
+  try {
+    await resend.emails.send({
+      from: 'your_verified_sender@email.com', // must be verified in Resend
+      to: email,
+      subject: 'Password Reset',
+      html: `<p>Reset your password: <a href="${process.env.BASE_URL}/reset-password/${token}">Click here</a></p>`
+    });
+    res.json({ message: 'Password reset email sent' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error sending reset email' });
+  }
 });
 
 // Reset password route
