@@ -20,6 +20,7 @@
     "mongoose": "^8.15.1",
     "nodemailer": "^7.0.9",
     "qrcode": "^1.5.4",
+    "resend": "^6.1.2",
     "shortid": "^2.2.17",
     "ua-parser-js": "^2.0.3"
   },
