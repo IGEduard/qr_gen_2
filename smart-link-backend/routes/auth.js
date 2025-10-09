@@ -57,7 +57,7 @@ router.post('/forgot-password', async (req, res) => {
   // Send email using Resend
   try {
     await resend.emails.send({
-      from: 'your_verified_sender@email.com', // must be verified in Resend
+      from: 'onboarding@resend.dev', // must be verified in Resend
       to: email,
       subject: 'Password Reset',
       html: `<p>Reset your password: <a href="${process.env.BASE_URL}/reset-password/${token}">Click here</a></p>`
