@@ -205,11 +205,11 @@ const [token, setToken] = useState(() => localStorage.getItem('token') || '');
     return <SmartLinkRedirect shortId={shortId} links={links} />;
   }
 
-  const resetMatch = pathname.match(/^\/reset-password\/(.+)$/);
-  if (resetMatch) {
-    const token = resetMatch[1];
-    return <ResetPassword token={token} />;
-  }
+const resetMatch = pathname.match(/^\/reset-password\/(.+)$/);
+if (resetMatch) {
+  const token = resetMatch[1];
+  return <ResetPassword token={token} />;
+}
 
   const handleSubmit = async (e) => {
     e.preventDefault();
