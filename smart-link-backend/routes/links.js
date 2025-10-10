@@ -11,7 +11,7 @@ router.post('/', auth, async (req, res) => {
     const { title, description, iosLink, androidLink, webLink } = req.body;
     
     const shortId = shortid.generate();
-    const smartLinkUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/api/links/${shortId}`;
+    const smartLinkUrl = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/links/${shortId}`;
     
     const qrCodeUrl = await generateQRCode(smartLinkUrl);
     

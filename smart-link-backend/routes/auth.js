@@ -74,7 +74,7 @@ router.post('/forgot-password', async (req, res) => {
               }
             ],
             Subject: "Password Reset",
-            HTMLPart: `<p>Reset your password: <a href="${process.env.BASE_URL}/reset-password/${token}">Click here</a></p>`
+            HTMLPart: `<p>Reset your password: <a href="${process.env.FRONTEND_URL}/reset-password/${token}">Click here</a></p>`
           }
         ]
       });
