@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom'; // If using react-router
 import { authAPI } from '../services/api';
 
-const ResetPassword = () => {
-  const { token } = useParams();
+const ResetPassword = ({ token }) => {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
