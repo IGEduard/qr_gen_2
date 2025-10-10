@@ -5,6 +5,10 @@ const ResetPassword = ({ token }) => {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
+  const goToLogin = () => {
+    window.location.href = '/'; // or use navigate('/') if you have a router
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -26,10 +30,24 @@ const ResetPassword = ({ token }) => {
         required
         className="w-full p-2 border border-gray-300 rounded-md mb-4"
       />
-      <button type="submit" className="w-full bg-blue-600 text-white py-2 px-4 rounded-md">
+      <button
+        type="submit"
+        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md cursor-pointer hover:bg-blue-700"
+      >
         Reset Password
       </button>
-      {message && <div className="mt-4 text-green-600">{message}</div>}
+      {message && (
+        <div className="mt-4 text-green-600">
+          {message}
+          <button
+            type="button"
+            onClick={goToLogin}
+            className="block mt-4 w-full bg-gray-700 text-white py-2 px-4 rounded-md cursor-pointer hover:bg-gray-800"
+          >
+            Back to Login
+          </button>
+        </div>
+      )}
     </form>
   );
 };

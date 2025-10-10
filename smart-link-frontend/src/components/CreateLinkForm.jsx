@@ -105,7 +105,7 @@ const CreateLinkForm = ({ onLinkCreated }) => {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
       >
         {loading ? 'Creating...' : 'Create Smart Link'}
       </button>

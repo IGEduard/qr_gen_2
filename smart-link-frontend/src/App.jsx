@@ -92,7 +92,7 @@ const SmartLinkRedirect = ({ shortId }) => {
           <p className="text-gray-400 mb-6">The smart link you're looking for doesn't exist.</p>
           <button
             onClick={() => window.location.href = '/'}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg cursor-pointer"
           >
             Go to Homepage
           </button>
@@ -312,11 +312,11 @@ if (resetMatch) {
               className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
             />
             {authError && <div className="text-red-400 mb-2">{authError}</div>}
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2">Login</button>
-            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded" onClick={() => setShowLogin(false)}>Cancel</button>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2 cursor-pointer">Login</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowLogin(false)}>Cancel</button>
             <button
               type="button"
-              className="text-blue-400 underline mb-2"
+              className="text-blue-400 underline mb-2 cursor-pointer"
               onClick={() => setShowForgot(true)}
             >
               Forgot Password?
@@ -365,8 +365,8 @@ if (resetMatch) {
               className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
             />
             {authError && <div className="text-red-400 mb-2">{authError}</div>}
-            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded mb-2">Register</button>
-            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded" onClick={() => setShowRegister(false)}>Cancel</button>
+            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded mb-2 cursor-pointer">Register</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowRegister(false)}>Cancel</button>
           </form>
         </div>
       )}
@@ -396,8 +396,8 @@ if (resetMatch) {
               className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
             />
             {forgotMessage && <div className="text-green-400 mb-2">{forgotMessage}</div>}
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2">Send Reset Link</button>
-            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded" onClick={() => setShowForgot(false)}>Cancel</button>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2 cursor-pointer">Send Reset Link</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowForgot(false)}>Cancel</button>
           </form>
         </div>
       )}
@@ -418,11 +418,11 @@ if (resetMatch) {
             <Moon size={14} />
             <span>Dark Mode</span>
             {user ? (
-              <button onClick={handleLogout} className="ml-4 bg-gray-700 px-3 py-1 rounded text-white">Logout</button>
+              <button onClick={handleLogout} className="ml-4 bg-gray-700 px-3 py-1 rounded text-white cursor-pointer">Logout</button>
             ) : (
               <>
-                <button onClick={() => setShowLogin(true)} className="ml-4 bg-blue-600 px-3 py-1 rounded text-white">Login</button>
-                <button onClick={() => setShowRegister(true)} className="ml-2 bg-purple-600 px-3 py-1 rounded text-white">Register</button>
+                <button onClick={() => setShowLogin(true)} className="ml-4 bg-blue-600 px-3 py-1 rounded text-white cursor-pointer">Login</button>
+                <button onClick={() => setShowRegister(true)} className="ml-2 bg-purple-600 px-3 py-1 rounded text-white cursor-pointer">Register</button>
               </>
             )}
           </div>
@@ -447,7 +447,7 @@ if (resetMatch) {
         {user && (
           <button
             onClick={() => setShowCreateForm(true)}
-            className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group mb-12"
+            className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group mb-12 cursor-pointer"
           >
             <Plus size={24} />
             Create Smart Link / Text QR
@@ -484,7 +484,7 @@ if (resetMatch) {
                         </code>
                         <button
                           onClick={() => copyToClipboard(getSmartLinkUrl(link.shortId))}
-                          className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
+                          className="p-1 text-gray-400 hover:text-blue-400 transition-colors cursor-pointer"
                         >
                           {copySuccess ? <CheckCircle size={16} className="text-green-400" /> : <Copy size={16} />}
                         </button>
@@ -553,7 +553,7 @@ if (resetMatch) {
                 <h2 className="text-2xl font-bold">Create Smart Link / Text QR</h2>
                 <button
                   onClick={() => setShowCreateForm(false)}
-                  className="text-gray-400 hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700"
+                  className="text-gray-400 hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700 cursor-pointer"
                 >
                   ×
                 </button>
@@ -635,14 +635,14 @@ if (resetMatch) {
                     <button
                       type="button"
                       onClick={() => setShowCreateForm(false)}
-                      className="flex-1 py-3 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                      className="flex-1 py-3 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg disabled:opacity-50 transition-colors cursor-pointer"
                     >
                       {loading ? 'Creating...' : (qrMode === 'smartlink' ? 'Create Link' : 'Create Text QR')}
                     </button>
