@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ExternalLink, Smartphone, Monitor, QrCode, Copy, Eye, Zap, ArrowRight, CheckCircle, Moon } from 'lucide-react';
 import { linkAPI, authAPI } from './services/api';
+import ResetPassword from './components/ResetPassword';
 
 // Simple router hook
 const useRouter = () => {
@@ -202,6 +203,12 @@ const [token, setToken] = useState(() => localStorage.getItem('token') || '');
   if (linkMatch) {
     const shortId = linkMatch[1];
     return <SmartLinkRedirect shortId={shortId} links={links} />;
+  }
+
+  const resetMatch = pathname.match(/^\/reset-password\/(.+)$/);
+  if (resetMatch) {
+    const token = resetMatch[1];
+    return <ResetPassword token={token} />;
   }
 
   const handleSubmit = async (e) => {
