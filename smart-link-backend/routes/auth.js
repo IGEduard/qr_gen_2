@@ -3,10 +3,11 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const User = require('../models/User');
-const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
+const mailjet = require('node-mailjet').connect(
+  process.env.MAILJET_API_KEY,
+  process.env.MAILJET_API_SECRET
+);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
@@ -54,16 +55,32 @@ router.post('/forgot-password', async (req, res) => {
   user.resetTokenExpires = Date.now() + 3600 * 1000; // 1 hour
   await user.save();
 
-  // Send email using Resend
+  // Send email using Mailjet
   try {
-    await resend.emails.send({
-      from: 'eduardg.ionescug@gmail.com', // must be verified in Resend
-      to: email,
-      subject: 'Password Reset',
-      html: `<p>Reset your password: <a href="${process.env.BASE_URL}/reset-password/${token}">Click here</a></p>`
-    });
+    const request = mailjet
+      .post('send', { version: 'v3.1' })
+      .request({
+        Messages: [
+          {
+            From: {
+              Email: process.env.MAILJET_SENDER,
+              Name: "Smart Link App"
+            },
+            To: [
+              {
+                Email: email,
+                Name: user.email
+              }
+            ],
+            Subject: "Password Reset",
+            HTMLPart: `<p>Reset your password: <a href="${process.env.BASE_URL}/reset-password/${token}">Click here</a></p>`
+          }
+        ]
+      });
+    await request;
     res.json({ message: 'Password reset email sent' });
   } catch (err) {
+    console.error('Mailjet error:', err);
     res.status(500).json({ error: 'Error sending reset email' });
   }
 });
