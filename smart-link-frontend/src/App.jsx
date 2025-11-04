@@ -1,7 +1,10 @@
+// smart-link-frontend/src/App.jsx
+
 import React, { useState, useEffect } from 'react';
-import { Plus, ExternalLink, Smartphone, Monitor, QrCode, Copy, Eye, Zap, ArrowRight, CheckCircle, Moon } from 'lucide-react';
+import { Plus, ExternalLink, Smartphone, Monitor, QrCode, Copy, Eye, Zap, ArrowRight, CheckCircle, Moon, Languages } from 'lucide-react';
 import { linkAPI, authAPI } from './services/api';
 import ResetPassword from './components/ResetPassword';
+import { useLanguage } from './contexts/LanguageContext';
 
 // Simple router hook
 const useRouter = () => {
@@ -28,6 +31,7 @@ const detectDevice = () => {
 
 // Smart Link Redirect Component
 const SmartLinkRedirect = ({ shortId }) => {
+  const { t } = useLanguage();
   const [redirecting, setRedirecting] = useState(true);
   const [link, setLink] = useState(null);
   const [device, setDevice] = useState('');
@@ -76,7 +80,7 @@ const SmartLinkRedirect = ({ shortId }) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div>Loading...</div>
+        <div>{t('loading')}</div>
       </div>
     );
   }
@@ -88,13 +92,13 @@ const SmartLinkRedirect = ({ shortId }) => {
           <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <ExternalLink size={32} />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Link Not Found</h1>
-          <p className="text-gray-400 mb-6">The smart link you're looking for doesn't exist.</p>
+          <h1 className="text-2xl font-bold mb-2">{t('linkNotFound')}</h1>
+          <p className="text-gray-400 mb-6">{t('linkNotFoundDescription')}</p>
           <button
             onClick={() => window.location.href = '/'}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg cursor-pointer"
           >
-            Go to Homepage
+            {t('goToHomepage')}
           </button>
         </div>
       </div>
@@ -107,22 +111,22 @@ const SmartLinkRedirect = ({ shortId }) => {
         <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
           <Zap size={32} />
         </div>
-        <h1 className="text-3xl font-bold mb-4">Redirecting...</h1>
-        <p className="text-gray-400 mb-2">Detected device: <span className="text-blue-400 capitalize">{device}</span></p>
+        <h1 className="text-3xl font-bold mb-4">{t('redirecting')}</h1>
+        <p className="text-gray-400 mb-2">{t('detectedDevice')}: <span className="text-blue-400 capitalize">{device}</span></p>
         {link && (
-          <p className="text-gray-400">Taking you to <span className="text-white font-semibold">{link.title}</span></p>
+          <p className="text-gray-400">{t('takingYouTo')} <span className="text-white font-semibold">{link.title}</span></p>
         )}
         
         {!redirecting && (
           <div className="mt-8 p-6 bg-gray-800 rounded-lg max-w-md mx-auto">
-            <p className="text-gray-400 mb-4">Automatic redirect failed. Choose your destination:</p>
+            <p className="text-gray-400 mb-4">{t('automaticRedirectFailed')}</p>
             <div className="space-y-3">
               {link?.iosLink && (
                 <a
                   href={link.iosLink}
                   className="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors"
                 >
-                  Open on iOS
+                  {t('openOnIOS')}
                 </a>
               )}
               {link?.androidLink && (
@@ -130,7 +134,7 @@ const SmartLinkRedirect = ({ shortId }) => {
                   href={link.androidLink}
                   className="block w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition-colors"
                 >
-                  Open on Android
+                  {t('openOnAndroid')}
                 </a>
               )}
               {link?.webLink && (
@@ -138,7 +142,7 @@ const SmartLinkRedirect = ({ shortId }) => {
                   href={link.webLink}
                   className="block w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-colors"
                 >
-                  Open Web App
+                  {t('openWebApp')}
                 </a>
               )}
             </div>
@@ -150,11 +154,12 @@ const SmartLinkRedirect = ({ shortId }) => {
 };
 
 const App = () => {
+  const { t, language, toggleLanguage } = useLanguage();
   const [user, setUser] = useState(() => {
-  const storedUser = localStorage.getItem('user');
-  return storedUser ? JSON.parse(storedUser) : null;
-});
-const [token, setToken] = useState(() => localStorage.getItem('token') || '');
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('token') || '');
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
@@ -163,7 +168,7 @@ const [token, setToken] = useState(() => localStorage.getItem('token') || '');
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
   const [authError, setAuthError] = useState('');
 
-  const [qrMode, setQrMode] = useState('smartlink'); // 'smartlink' or 'text'
+  const [qrMode, setQrMode] = useState('smartlink');
   const [plainText, setPlainText] = useState('');
   const { pathname, navigate } = useRouter();
   const [links, setLinks] = useState([]);
@@ -178,38 +183,29 @@ const [token, setToken] = useState(() => localStorage.getItem('token') || '');
     webLink: ''
   });
 
-  // Fetch user links when logged in
   useEffect(() => {
-  if (token) {
-    linkAPI.getAllLinks()
-      .then(res => {
-        console.log('Fetched links:', res.data);
-        setLinks(Array.isArray(res.data) ? res.data : []);
-      })
-      .catch(() => setLinks([]));
-  } else {
-    setLinks([]);
-  }
-}, [token]);
+    if (token) {
+      linkAPI.getAllLinks()
+        .then(res => {
+          setLinks(Array.isArray(res.data) ? res.data : []);
+        })
+        .catch(() => setLinks([]));
+    } else {
+      setLinks([]);
+    }
+  }, [token]);
 
-  // Generate QR code using an online service (for demo purposes)
-  const generateQRCodeUrl = (text) => {
-    const encodedText = encodeURIComponent(text);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedText}&bgcolor=ffffff&color=000000&format=png`;
-  };
-
-  // Check if current path is a smart link
   const linkMatch = pathname.match(/^\/link\/(.+)$/);
   if (linkMatch) {
     const shortId = linkMatch[1];
     return <SmartLinkRedirect shortId={shortId} links={links} />;
   }
 
-const resetMatch = pathname.match(/^\/reset-password\/(.+)$/);
-if (resetMatch) {
-  const token = resetMatch[1];
-  return <ResetPassword token={token} />;
-}
+  const resetMatch = pathname.match(/^\/reset-password\/(.+)$/);
+  if (resetMatch) {
+    const token = resetMatch[1];
+    return <ResetPassword token={token} />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -227,7 +223,6 @@ if (resetMatch) {
           webLink: ''
         });
       } else {
-        // Save Text QR to backend
         const response = await linkAPI.createTextQR(plainText);
         setLinks([response.data, ...links]);
         setPlainText('');
@@ -235,7 +230,7 @@ if (resetMatch) {
       setShowCreateForm(false);
     } catch (error) {
       console.error('Error creating link:', error);
-      alert('Error creating link. Please try again.');
+      alert(t('errorCreatingLink'));
     } finally {
       setLoading(false);
     }
@@ -251,7 +246,7 @@ if (resetMatch) {
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopySuccess('Copied!');
+      setCopySuccess(t('copied'));
       setTimeout(() => setCopySuccess(''), 2000);
     } catch (err) {
       console.error('Failed to copy text: ', err);
@@ -290,14 +285,14 @@ if (resetMatch) {
                 setShowLogin(false);
                 setAuthForm({ email: '', password: '' });
               } catch (err) {
-                setAuthError(err.response?.data?.error || 'Login failed');
+                setAuthError(err.response?.data?.error || t('loginFailed'));
               }
             }}
           >
-            <h2 className="text-xl font-bold mb-4">Login</h2>
+            <h2 className="text-xl font-bold mb-4">{t('loginTitle')}</h2>
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t('email')}
               value={authForm.email}
               onChange={e => setAuthForm(f => ({ ...f, email: e.target.value }))}
               required
@@ -305,21 +300,21 @@ if (resetMatch) {
             />
             <input
               type="password"
-              placeholder="Password"
+              placeholder={t('password')}
               value={authForm.password}
               onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
               required
               className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
             />
             {authError && <div className="text-red-400 mb-2">{authError}</div>}
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2 cursor-pointer">Login</button>
-            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowLogin(false)}>Cancel</button>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2 cursor-pointer">{t('login')}</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowLogin(false)}>{t('cancel')}</button>
             <button
               type="button"
-              className="text-blue-400 underline mb-2 cursor-pointer"
+              className="text-blue-400 underline mb-2 cursor-pointer mt-2"
               onClick={() => setShowForgot(true)}
             >
-              Forgot Password?
+              {t('forgotPassword')}
             </button>
           </form>
         </div>
@@ -334,7 +329,6 @@ if (resetMatch) {
               setAuthError('');
               try {
                 await authAPI.register(authForm);
-                // Auto-login after register:
                 const res = await authAPI.login(authForm);
                 setToken(res.data.token);
                 setUser(res.data.user);
@@ -343,14 +337,14 @@ if (resetMatch) {
                 setShowRegister(false);
                 setAuthForm({ email: '', password: '' });
               } catch (err) {
-                setAuthError(err.response?.data?.error || 'Register failed');
+                setAuthError(err.response?.data?.error || t('registerFailed'));
               }
             }}
           >
-            <h2 className="text-xl font-bold mb-4">Register</h2>
+            <h2 className="text-xl font-bold mb-4">{t('registerTitle')}</h2>
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t('email')}
               value={authForm.email}
               onChange={e => setAuthForm(f => ({ ...f, email: e.target.value }))}
               required
@@ -358,15 +352,15 @@ if (resetMatch) {
             />
             <input
               type="password"
-              placeholder="Password"
+              placeholder={t('password')}
               value={authForm.password}
               onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
               required
               className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
             />
             {authError && <div className="text-red-400 mb-2">{authError}</div>}
-            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded mb-2 cursor-pointer">Register</button>
-            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowRegister(false)}>Cancel</button>
+            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded mb-2 cursor-pointer">{t('register')}</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowRegister(false)}>{t('cancel')}</button>
           </form>
         </div>
       )}
@@ -380,24 +374,24 @@ if (resetMatch) {
               setForgotMessage('');
               try {
                 await authAPI.forgotPassword({ email: forgotEmail });
-                setForgotMessage('Check your email for reset instructions.');
+                setForgotMessage(t('checkEmail'));
               } catch (err) {
                 setForgotMessage(err.response?.data?.error || 'Error sending reset email');
               }
             }}
           >
-            <h2 className="text-xl font-bold mb-4">Forgot Password</h2>
+            <h2 className="text-xl font-bold mb-4">{t('forgotPasswordTitle')}</h2>
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t('email')}
               value={forgotEmail}
               onChange={e => setForgotEmail(e.target.value)}
               required
               className="w-full mb-3 p-2 rounded bg-gray-900 border border-gray-700 text-white"
             />
             {forgotMessage && <div className="text-green-400 mb-2">{forgotMessage}</div>}
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2 cursor-pointer">Send Reset Link</button>
-            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowForgot(false)}>Cancel</button>
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded mb-2 cursor-pointer">{t('sendResetLink')}</button>
+            <button type="button" className="w-full bg-gray-700 text-white py-2 rounded cursor-pointer" onClick={() => setShowForgot(false)}>{t('cancel')}</button>
           </form>
         </div>
       )}
@@ -414,15 +408,28 @@ if (resetMatch) {
               <p className="text-xs text-gray-400">Device-intelligent routing</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <Moon size={14} />
-            <span>Dark Mode</span>
+          <div className="flex items-center gap-4 text-xs text-gray-400">
+            <div className="flex items-center gap-2">
+              <Moon size={14} />
+              <span>{t('darkMode')}</span>
+            </div>
+            
+            {/* Language Toggle Button */}
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+              title={language === 'en' ? 'Switch to Romanian' : 'Comută la Engleză'}
+            >
+              <Languages size={16} />
+              <span className="font-semibold uppercase">{language === 'en' ? 'EN' : 'RO'}</span>
+            </button>
+
             {user ? (
-              <button onClick={handleLogout} className="ml-4 bg-gray-700 px-3 py-1 rounded text-white cursor-pointer">Logout</button>
+              <button onClick={handleLogout} className="bg-gray-700 px-3 py-1 rounded text-white cursor-pointer">{t('logout')}</button>
             ) : (
               <>
-                <button onClick={() => setShowLogin(true)} className="ml-4 bg-blue-600 px-3 py-1 rounded text-white cursor-pointer">Login</button>
-                <button onClick={() => setShowRegister(true)} className="ml-2 bg-purple-600 px-3 py-1 rounded text-white cursor-pointer">Register</button>
+                <button onClick={() => setShowLogin(true)} className="bg-blue-600 px-3 py-1 rounded text-white cursor-pointer">{t('login')}</button>
+                <button onClick={() => setShowRegister(true)} className="bg-purple-600 px-3 py-1 rounded text-white cursor-pointer">{t('register')}</button>
               </>
             )}
           </div>
@@ -436,10 +443,10 @@ if (resetMatch) {
             <Zap className="text-white w-10 h-10" />
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Intelligent Link Management
+            {t('heroTitle')}
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
-            Create smart links that automatically redirect users to the perfect app store or web destination based on their device, or generate a QR code for any text!
+            {t('heroDescription')}
           </p>
         </div>
 
@@ -450,7 +457,7 @@ if (resetMatch) {
             className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group mb-12 cursor-pointer"
           >
             <Plus size={24} />
-            Create Smart Link / Text QR
+            {t('createButton')}
             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
           </button>
         )}
@@ -461,8 +468,8 @@ if (resetMatch) {
             <div className="w-16 h-16 bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <QrCode size={32} className="text-gray-400" />
             </div>
-            <h3 className="text-2xl font-semibold mb-2">No smart links yet</h3>
-            <p className="text-gray-400">Create your first smart link or text QR to get started</p>
+            <h3 className="text-2xl font-semibold mb-2">{t('noLinksTitle')}</h3>
+            <p className="text-gray-400">{t('noLinksDescription')}</p>
           </div>
         ) : (
           <div className="grid gap-6 w-full">
@@ -475,7 +482,6 @@ if (resetMatch) {
                       <p className="text-gray-400 mb-4">{link.description}</p>
                     )}
 
-                    {/* Smart Link URL (only for smart links) */}
                     {link.shortId && (
                       <div className="bg-gray-900 border border-gray-600 rounded-xl p-3 mb-4 flex items-center gap-3">
                         <ExternalLink size={16} className="text-gray-400" />
@@ -491,13 +497,12 @@ if (resetMatch) {
                       </div>
                     )}
 
-                    {/* Device Links (only for smart links) */}
                     {link.shortId && (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                         {[
-                          { label: 'iOS', icon: <Smartphone size={16} className="text-blue-400" />, url: link.iosLink, store: 'App Store' },
-                          { label: 'Android', icon: <Smartphone size={16} className="text-green-400" />, url: link.androidLink, store: 'Play Store' },
-                          { label: 'Web', icon: <Monitor size={16} className="text-purple-400" />, url: link.webLink, store: 'Web App' }
+                          { label: t('ios'), icon: <Smartphone size={16} className="text-blue-400" />, url: link.iosLink, store: t('appStore') },
+                          { label: t('android'), icon: <Smartphone size={16} className="text-green-400" />, url: link.androidLink, store: t('playStore') },
+                          { label: t('web'), icon: <Monitor size={16} className="text-purple-400" />, url: link.webLink, store: t('webApp') }
                         ].map((device, idx) => (
                           <div key={idx} className="flex items-center gap-2 text-sm bg-gray-900 rounded-lg p-2">
                             {device.icon}
@@ -510,32 +515,29 @@ if (resetMatch) {
                       </div>
                     )}
 
-                    {/* Plain Text (only for text QR) */}
                     {!link.shortId && link.plainText && (
                       <div className="mb-4">
-                        <span className="text-gray-400">Text:</span>
+                        <span className="text-gray-400">{t('text')}:</span>
                         <span className="ml-2 font-mono text-blue-300">{link.plainText}</span>
                       </div>
                     )}
 
-                    {/* Stats (only for smart links) */}
                     {link.shortId && (
                       <div className="flex items-center gap-4 text-sm text-gray-400">
                         <div className="flex items-center gap-1">
                           <Eye size={16} />
-                          <span>{link.clicks.toLocaleString()} clicks</span>
+                          <span>{link.clicks.toLocaleString()} {t('clicks')}</span>
                         </div>
-                        <div>Created {new Date(link.createdAt).toLocaleDateString()}</div>
+                        <div>{t('created')} {new Date(link.createdAt).toLocaleDateString()}</div>
                       </div>
                     )}
                   </div>
 
-                  {/* QR Code */}
                   <div className="text-center md:text-right">
                     <div className="w-24 h-24 bg-white rounded-xl flex items-center justify-center mb-2 shadow-lg">
                       <img src={link.qrCodeUrl} alt="QR Code" className="w-20 h-20" />
                     </div>
-                    <p className="text-xs text-gray-400">QR Code</p>
+                    <p className="text-xs text-gray-400">{t('qrCode')}</p>
                   </div>
                 </div>
               </div>
@@ -550,7 +552,7 @@ if (resetMatch) {
           <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Create Smart Link / Text QR</h2>
+                <h2 className="text-2xl font-bold">{t('createSmartLink')}</h2>
                 <button
                   onClick={() => setShowCreateForm(false)}
                   className="text-gray-400 hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-700 cursor-pointer"
@@ -559,7 +561,6 @@ if (resetMatch) {
                 </button>
               </div>
 
-              {/* Mode Selector */}
               <div className="mb-4 flex gap-4">
                 <label>
                   <input
@@ -569,7 +570,7 @@ if (resetMatch) {
                     checked={qrMode === 'smartlink'}
                     onChange={() => setQrMode('smartlink')}
                   />{' '}
-                  Smart Link
+                  {t('smartLink')}
                 </label>
                 <label>
                   <input
@@ -579,7 +580,7 @@ if (resetMatch) {
                     checked={qrMode === 'text'}
                     onChange={() => setQrMode('text')}
                   />{' '}
-                  Text QR
+                  {t('textQR')}
                 </label>
               </div>
 
@@ -587,11 +588,11 @@ if (resetMatch) {
                 <div className="space-y-4">
                   {qrMode === 'smartlink' ? (
                     [
-                      { field: 'title', label: 'Title', type: 'text', placeholder: 'My Awesome App' },
-                      { field: 'description', label: 'Description', type: 'textarea', placeholder: 'Brief description of your app' },
-                      { field: 'iosLink', label: 'iOS Link', type: 'url', placeholder: 'https://apps.apple.com/app/...' },
-                      { field: 'androidLink', label: 'Android Link', type: 'url', placeholder: 'https://play.google.com/store/apps/details?id=...' },
-                      { field: 'webLink', label: 'Web Link', type: 'url', placeholder: 'https://your-web-app.com' }
+                      { field: 'title', label: t('title'), type: 'text', placeholder: t('titlePlaceholder') },
+                      { field: 'description', label: t('description'), type: 'textarea', placeholder: t('descriptionPlaceholder') },
+                      { field: 'iosLink', label: t('iosLink'), type: 'url', placeholder: t('iosLinkPlaceholder') },
+                      { field: 'androidLink', label: t('androidLink'), type: 'url', placeholder: t('androidLinkPlaceholder') },
+                      { field: 'webLink', label: t('webLink'), type: 'url', placeholder: t('webLinkPlaceholder') }
                     ].map(({ field, label, type, placeholder }) => (
                       <div key={field}>
                         <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
@@ -619,12 +620,12 @@ if (resetMatch) {
                     ))
                   ) : (
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Text for QR Code</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">{t('textForQR')}</label>
                       <input
                         type="text"
                         value={plainText}
                         onChange={e => setPlainText(e.target.value)}
-                        placeholder="Enter serial code or any text"
+                        placeholder={t('textQRPlaceholder')}
                         className="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-400"
                         required
                       />
@@ -637,14 +638,14 @@ if (resetMatch) {
                       onClick={() => setShowCreateForm(false)}
                       className="flex-1 py-3 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors cursor-pointer"
                     >
-                      Cancel
+                      {t('cancel')}
                     </button>
                     <button
                       type="submit"
                       disabled={loading}
                       className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg disabled:opacity-50 transition-colors cursor-pointer"
                     >
-                      {loading ? 'Creating...' : (qrMode === 'smartlink' ? 'Create Link' : 'Create Text QR')}
+                      {loading ? t('creating') : (qrMode === 'smartlink' ? t('createLink') : t('createTextQR'))}
                     </button>
                   </div>
                 </div>
